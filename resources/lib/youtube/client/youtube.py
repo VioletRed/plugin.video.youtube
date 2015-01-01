@@ -267,7 +267,6 @@ class YouTube(LoginClient):
                   'playlistId': playlist_id}
         if page_token:
             params['pageToken'] = page_token
-            pass
 
         return self._perform_v3_request(method='GET', path='playlistItems', params=params)
 

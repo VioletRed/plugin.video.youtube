@@ -224,23 +224,18 @@ class Provider(kodion.AbstractProvider):
     """
     Plays a video.
     path for video: '/play/?video_id=XXXXXXX'
-
-    TODO: path for playlist: '/play/?playlist_id=XXXXXXX&mode=[OPTION]'
-    OPTION: [normal(default)|reverse|shuffle]
+    path for playlist: '/play/?playlist_id=XXXXXXX&mode=[MODE][&video_id=YYYYYYY]'
+        MODE: [normal(default)|reverse|shuffle]
+        Optional: video_id
     """
 
     @kodion.RegisterProviderPath('^/play/$')
     def _on_play(self, context, re_match):
-        def _play_playlist():
-            playlist_id = context.get_param('playlist_id')
-            order = context.get_param('order', 'default')
-            pass
-
         params = context.get_params()
-        if 'video_id' in params:
-            return yt_play.play_video(self, context, re_match)
-        elif 'playlist_id' in params:
+        if 'playlist_id' in params:
             return yt_play.play_playlist(self, context, re_match)
+        elif 'video_id' in params:
+            return yt_play.play_video(self, context, re_match)
 
         return False
 
@@ -337,13 +332,24 @@ class Provider(kodion.AbstractProvider):
         """
         Support old YouTube url call, but also log a deprecation warning.
         plugin://plugin.video.youtube/?action=play_video&videoid=[ID]
+        plugin://plugin.video.youtube/?action=play_all&playlist=[PLID]&videoid=[ID]
         """
         old_action = context.get_param('action', '')
         old_video_id = context.get_param('videoid', '')
-        if old_action and old_video_id:
+        old_playlist_id = context.get_param('playlist','')
+        if old_action and (old_video_id or old_playlist_id):
             context.log_warning('DEPRECATED "%s"' % context.get_uri())
-            context.log_warning('USE INSTEAD "plugin://%s/play/?video_id=%s"' % (context.get_id(), old_video_id))
-            new_params = {'video_id': old_video_id}
+            if old_video_id:
+                video_warning_uri = "&video_id=%s" % old_video_id
+                new_params = {'video_id': old_video_id}
+            else:
+                video_warning_uri = ''
+                new_params = {'playlist_id': old_playlist_id}
+            if old_playlist_id:
+                context.log_warning('USE INSTEAD "plugin://%s/play/?playlist_id=%s%s"' % (context.get_id(), old_playlist_id, video_warning_uri))
+                new_params.update({'playlist_id': old_playlist_id})
+            else:
+                context.log_warning('USE INSTEAD "plugin://%s/play/?video_id=%s"' % (context.get_id(), old_video_id))
             new_path = '/play/'
             new_context = context.clone(new_path=new_path, new_params=new_params)
             return self._on_play(new_context, re_match)
