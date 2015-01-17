@@ -60,7 +60,8 @@ class XbmcContext(AbstractContext):
         self._audio_playlist = None
         self._video_player = None
         self._audio_player = None
-        self._plugin_handle = int(sys.argv[1])
+        try: self._plugin_handle = int(sys.argv[1])
+        except: self._plugin_handle = None
         self._plugin_id = plugin_id or self._addon.getAddonInfo('id')
         self._plugin_name = plugin_name or self._addon.getAddonInfo('name')
         self._version = self._addon.getAddonInfo('version')
